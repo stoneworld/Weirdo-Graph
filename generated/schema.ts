@@ -154,4 +154,13 @@ export class User extends Entity {
   set tokens(value: Array<string>) {
     this.set("tokens", Value.fromStringArray(value));
   }
+
+  get tokenCount(): i32 {
+    let value = this.get("tokenCount");
+    return value!.toI32();
+  }
+
+  set tokenCount(value: i32) {
+    this.set("tokenCount", Value.fromI32(value));
+  }
 }

@@ -51,6 +51,14 @@ export function handleTransfer(event: Transfer): void {
   let user = User.load(event.params.to.toHexString())
   if (!user) {
     user = new User(event.params.to.toHexString())
+    user.tokenCount = 0
     user.save()
   }
+  let fromUser = User.load(event.params.from.toHexString())
+  if (fromUser) {
+    fromUser.tokenCount = fromUser.tokenCount - 1
+    fromUser.save()
+  }
+  user.tokenCount = user.tokenCount + 1
+  user.save()
 }
