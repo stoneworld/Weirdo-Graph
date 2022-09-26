@@ -1,0 +1,28 @@
+specVersion: 0.0.4
+schema:
+  file: schema.graphql
+features:
+  - fullTextSearch
+  - ipfsOnEthereumContracts
+dataSources:
+  - kind: ethereum
+    name: weirdo
+    network: mainnet
+    source:
+      address: "0x9401518f4ebba857baa879d9f76e1cc8b31ed197"
+      abi: weirdo
+      startBlock: 14171042
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - Token
+        - Owner
+      abis:
+        - name: weirdo
+          file: weirdo/abis/weirdo.json
+      eventHandlers:
+        - event: Transfer(indexed address,indexed address,indexed uint256)
+          handler: handleTransfer
+      file: weirdo/weirdo.wasm
