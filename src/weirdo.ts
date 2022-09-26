@@ -56,9 +56,11 @@ export function handleTransfer(event: Transfer): void {
   }
   let fromUser = User.load(event.params.from.toHexString())
   if (fromUser) {
+    // 转移来源的 tokenCount - 1
     fromUser.tokenCount = fromUser.tokenCount - 1
     fromUser.save()
   }
+
   user.tokenCount = user.tokenCount + 1
   user.save()
 }
