@@ -1,4 +1,4 @@
-import { BigInt } from "@graphprotocol/graph-ts"
+import { BigInt, ipfs, json } from "@graphprotocol/graph-ts"
 import {
   weirdo,
   Approval,
@@ -7,73 +7,50 @@ import {
   PaymentReleased,
   Transfer
 } from "../generated/weirdo/weirdo"
-import { ExampleEntity } from "../generated/schema"
+import { Token, User } from "../generated/schema"
 
-export function handleApproval(event: Approval): void {
-  // Entities can be loaded from the store using a string ID; this ID
-  // needs to be unique across all entities of the same type
-  let entity = ExampleEntity.load(event.transaction.from.toHex())
+const ipfs_hash = "QmU61BwmB9fm3kN4EWS14YxrB1FFJcMWj9GRrf4hsEvaYE"
 
-  // Entities only exist after they have been saved to the store;
-  // `null` checks allow to create entities on demand
-  if (!entity) {
-    entity = new ExampleEntity(event.transaction.from.toHex())
+export function handleTransfer(event: Transfer): void {
+  /* 从 Graph Node 中加载 Token 数据，你可以理解为从 MysQL 中根据 TokenId 查询数据 */
+  let token = Token.load(event.params.tokenId.toString())
+  if (!token) {
+    /* 如何 token 不存在，这里将新建一个 */
+    token = new Token(event.params.tokenId.toString())
+    token.tokenID = event.params.tokenId
+    // https://ipfs.io/ipfs/QmU61BwmB9fm3kN4EWS14YxrB1FFJcMWj9GRrf4hsEvaYE/1
+    token.tokenURI = "/" + event.params.tokenId.toString()
 
-    // Entity fields can be set using simple assignments
-    entity.count = BigInt.fromI32(0)
+    /* combine the ipfs hash and the token ID to fetch the token metadata from IPFS */
+    let metadata = ipfs.cat(ipfs_hash + token.tokenURI)
+
+    if (metadata) {
+      const value = json.fromBytes(metadata).toObject()
+      if (value) {
+        const image = value.get('image')
+        const name = value.get('name')
+        const description = value.get('description')
+
+        if (name && image && description) {
+          token.name = name.toString()
+          token.image = image.toString()
+          token.description = description.toString()
+          token.ipfsURI = 'ipfs.io/ipfs/' + ipfs_hash + token.tokenURI
+        }
+      }
+    }
   }
 
-  // BigInt and BigDecimal math are supported
-  entity.count = entity.count + BigInt.fromI32(1)
+  token.updatedAtTimestamp = event.block.timestamp
 
-  // Entity fields can be set based on event parameters
-  entity.owner = event.params.owner
-  entity.approved = event.params.approved
+  /* 设置或者更新 token owner 字段并将数据更新到 Graph Node */
+  token.owner = event.params.to.toHexString()
+  token.save()
 
-  // Entities can be written to the store with `.save()`
-  entity.save()
-
-  // Note: If a handler doesn't require existing field values, it is faster
-  // _not_ to load the entity from the store. Instead, create it fresh with
-  // `new Entity(...)`, set the fields that should be updated and save the
-  // entity back to the store. Fields that were not set or unset remain
-  // unchanged, allowing for partial updates to be applied.
-
-  // It is also possible to access smart contracts from mappings. For
-  // example, the contract that has emitted the event can be connected to
-  // with:
-  //
-  // let contract = Contract.bind(event.address)
-  //
-  // The following functions can then be called on this contract to access
-  // state variables and other data:
-  //
-  // - contract.PRICE(...)
-  // - contract.PreMaxMint(...)
-  // - contract.PublicMaxMint(...)
-  // - contract.balanceOf(...)
-  // - contract.getApproved(...)
-  // - contract.isApprovedForAll(...)
-  // - contract.maxTotalSupply(...)
-  // - contract.name(...)
-  // - contract.nextOwnerToExplicitlySet(...)
-  // - contract.numberMinted(...)
-  // - contract.owner(...)
-  // - contract.ownerOf(...)
-  // - contract.publicNumberMinted(...)
-  // - contract.status(...)
-  // - contract.supportsInterface(...)
-  // - contract.symbol(...)
-  // - contract.tokenByIndex(...)
-  // - contract.tokenOfOwnerByIndex(...)
-  // - contract.tokenURI(...)
-  // - contract.totalSupply(...)
+  /* 如果用户不存在，则创建一个 */
+  let user = User.load(event.params.to.toHexString())
+  if (!user) {
+    user = new User(event.params.to.toHexString())
+    user.save()
+  }
 }
-
-export function handleApprovalForAll(event: ApprovalForAll): void {}
-
-export function handleOwnershipTransferred(event: OwnershipTransferred): void {}
-
-export function handlePaymentReleased(event: PaymentReleased): void {}
-
-export function handleTransfer(event: Transfer): void {}

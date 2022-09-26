@@ -1,6 +1,9 @@
-specVersion: 0.0.1
+specVersion: 0.0.4
 schema:
   file: ./schema.graphql
+features:
+  - fullTextSearch
+  - ipfsOnEthereumContracts
 dataSources:
   - kind: ethereum
     name: weirdo
@@ -8,28 +11,18 @@ dataSources:
     source:
       address: "0x9401518f4ebba857baa879d9f76e1cc8b31ed197"
       abi: weirdo
+      startBlock: 14171042
     mapping:
       kind: ethereum/events
-      apiVersion: 0.0.5
+      apiVersion: 0.0.6
       language: wasm/assemblyscript
       entities:
-        - Approval
-        - ApprovalForAll
-        - OwnershipTransferred
-        - PaymentReleased
-        - Transfer
+        - Token
+        - Owner
       abis:
         - name: weirdo
           file: ./abis/weirdo.json
       eventHandlers:
-        - event: Approval(indexed address,indexed address,indexed uint256)
-          handler: handleApproval
-        - event: ApprovalForAll(indexed address,indexed address,bool)
-          handler: handleApprovalForAll
-        - event: OwnershipTransferred(indexed address,indexed address)
-          handler: handleOwnershipTransferred
-        - event: PaymentReleased(address,uint256)
-          handler: handlePaymentReleased
         - event: Transfer(indexed address,indexed address,indexed uint256)
           handler: handleTransfer
       file: ./src/weirdo.ts
